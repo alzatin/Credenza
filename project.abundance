@@ -367,7 +367,7 @@
     {
       "atomType": "Molecule",
       "x": 0.3,
-      "y": 0.4,
+      "y": 0.2,
       "uniqueID": "id-385",
       "name": "DoorTracks",
       "ioValues": [
@@ -842,7 +842,7 @@
         },
         {
           "atomType": "Code",
-          "x": 0.5,
+          "x": 0.4,
           "y": 0.4,
           "uniqueID": "id-484",
           "ioValues": [
