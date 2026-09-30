@@ -1,13 +1,250 @@
 {
-    "atomType": "Molecule",
-    "x": 0,
-    "y": 0,
-    "uniqueID": "id-256",
-    "name": "Credenza",
-    "topLevel": true,
-    "allAtoms": [],
-    "allConnectors": [],
-    "unitsKey": "MM",
-    "fileTypeVersion": 1,
-    "filetypeVersion": 1
+  "atomType": "Molecule",
+  "x": 0,
+  "y": 0,
+  "uniqueID": "id-256",
+  "name": "Credenza",
+  "topLevel": true,
+  "allAtoms": [
+    {
+      "atomType": "Output",
+      "x": 1,
+      "y": 0.5,
+      "uniqueID": "id-257",
+      "ioValues": [
+        {
+          "name": "number or geometry",
+          "ioValue": "__GEOMETRY_INPUT__"
+        }
+      ]
+    },
+    {
+      "atomType": "Constant",
+      "x": 0.1,
+      "y": 0.1,
+      "uniqueID": "id-259",
+      "name": "Width",
+      "value": 1600
+    },
+    {
+      "atomType": "Constant",
+      "x": 0.1,
+      "y": 0.2,
+      "uniqueID": "id-261",
+      "name": "Length",
+      "value": 450
+    },
+    {
+      "atomType": "Constant",
+      "x": 0.1,
+      "y": 0.4,
+      "uniqueID": "id-263",
+      "name": "Height",
+      "value": 750
+    },
+    {
+      "atomType": "Constant",
+      "x": 0.1,
+      "y": 0.5,
+      "uniqueID": "id-265",
+      "name": "Thickness",
+      "value": 18
+    },
+    {
+      "atomType": "Constant",
+      "x": 0.1,
+      "y": 0.6,
+      "uniqueID": "id-267",
+      "name": "LegHeight",
+      "value": 140
+    },
+    {
+      "atomType": "Molecule",
+      "x": 0.4,
+      "y": 0.4,
+      "uniqueID": "id-269",
+      "name": "Carcass",
+      "ioValues": [
+        {
+          "name": "Width",
+          "ioValue": 1600
+        },
+        {
+          "name": "Length",
+          "ioValue": 450
+        },
+        {
+          "name": "Height",
+          "ioValue": 750
+        },
+        {
+          "name": "Thickness",
+          "ioValue": 18
+        },
+        {
+          "name": "LegHeight",
+          "ioValue": 140
+        }
+      ],
+      "topLevel": false,
+      "allAtoms": [
+        {
+          "atomType": "Output",
+          "x": 1,
+          "y": 0.5,
+          "uniqueID": "id-271",
+          "ioValues": [
+            {
+              "name": "number or geometry",
+              "ioValue": "__GEOMETRY_INPUT__"
+            }
+          ]
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-273",
+          "name": "Width",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-276",
+          "name": "Length",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.3,
+          "uniqueID": "id-279",
+          "name": "Height",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.4,
+          "uniqueID": "id-282",
+          "name": "Thickness",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.5,
+          "uniqueID": "id-285",
+          "name": "LegHeight",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Code",
+          "x": 0.5,
+          "y": 0.5,
+          "uniqueID": "id-288",
+          "ioValues": [
+            {
+              "name": "width",
+              "ioValue": 1600
+            },
+            {
+              "name": "thickness",
+              "ioValue": 18
+            },
+            {
+              "name": "length",
+              "ioValue": 450
+            },
+            {
+              "name": "height",
+              "ioValue": 750
+            },
+            {
+              "name": "legHeight",
+              "ioValue": 140
+            }
+          ],
+          "interpreterVersion": 1,
+          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  const carcassH = H - legH;\n  const ply = \"#D9B45B\";\n\n  function panel(xs: number, ys: number, zs: number, cx: number, cy: number, bz: number, name: string) {\n    const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n    return new Assembly({\n      geometry: g,\n      color: ply,\n      tags: [\"cnc\", \"carcass\"],\n      bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n    });\n  }\n\n  const openW = W - 2 * T;\n  return [\n    panel(T, L, carcassH, -W / 2 + T / 2, 0, legH, \"Left side\"),\n    panel(T, L, carcassH, W / 2 - T / 2, 0, legH, \"Right side\"),\n    panel(openW, L, T, 0, 0, legH, \"Bottom\"),\n    panel(openW, L, T, 0, 0, H - T, \"Top\"),\n    panel(openW, T, carcassH - 2 * T, 0, L / 2 - T / 2, legH + T, \"Back\"),\n  ];\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    const carcassH = H - legH;\n    const ply = \"#D9B45B\";\n    function panel(xs, ys, zs, cx, cy, bz, name) {\n        const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n        return new Assembly({\n            geometry: g,\n            color: ply,\n            tags: [\"cnc\", \"carcass\"],\n            bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n        });\n    }\n    const openW = W - 2 * T;\n    return [\n        panel(T, L, carcassH, -W / 2 + T / 2, 0, legH, \"Left side\"),\n        panel(T, L, carcassH, W / 2 - T / 2, 0, legH, \"Right side\"),\n        panel(openW, L, T, 0, 0, legH, \"Bottom\"),\n        panel(openW, L, T, 0, 0, H - T, \"Top\"),\n        panel(openW, T, carcassH - 2 * T, 0, L / 2 - T / 2, legH + T, \"Back\"),\n    ];\n}\n"
+        }
+      ],
+      "allConnectors": [
+        {
+          "ap2Name": "width",
+          "ap1ID": "id-273",
+          "ap2ID": "id-288"
+        },
+        {
+          "ap2Name": "length",
+          "ap1ID": "id-276",
+          "ap2ID": "id-288"
+        },
+        {
+          "ap2Name": "height",
+          "ap1ID": "id-279",
+          "ap2ID": "id-288"
+        },
+        {
+          "ap2Name": "thickness",
+          "ap1ID": "id-282",
+          "ap2ID": "id-288"
+        },
+        {
+          "ap2Name": "legHeight",
+          "ap1ID": "id-285",
+          "ap2ID": "id-288"
+        },
+        {
+          "ap2Name": "number or geometry",
+          "ap1ID": "id-288",
+          "ap2ID": "id-271"
+        }
+      ],
+      "fileTypeVersion": 1
+    }
+  ],
+  "allConnectors": [
+    {
+      "ap2Name": "Width",
+      "ap1ID": "id-259",
+      "ap2ID": "id-269"
+    },
+    {
+      "ap2Name": "Length",
+      "ap1ID": "id-261",
+      "ap2ID": "id-269"
+    },
+    {
+      "ap2Name": "Height",
+      "ap1ID": "id-263",
+      "ap2ID": "id-269"
+    },
+    {
+      "ap2Name": "Thickness",
+      "ap1ID": "id-265",
+      "ap2ID": "id-269"
+    },
+    {
+      "ap2Name": "LegHeight",
+      "ap1ID": "id-267",
+      "ap2ID": "id-269"
+    },
+    {
+      "ap2Name": "number or geometry",
+      "ap1ID": "id-269",
+      "ap2ID": "id-257"
+    }
+  ],
+  "unitsKey": "MM",
+  "fileTypeVersion": 1,
+  "filetypeVersion": 1
 }
