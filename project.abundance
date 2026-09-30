@@ -61,7 +61,7 @@
     {
       "atomType": "Molecule",
       "x": 0.4,
-      "y": 0.4,
+      "y": 0.3,
       "uniqueID": "id-269",
       "name": "Carcass",
       "ioValues": [
@@ -214,7 +214,7 @@
     {
       "atomType": "Molecule",
       "x": 0.5,
-      "y": 0.6,
+      "y": 0.5,
       "uniqueID": "id-317",
       "name": "Interior",
       "ioValues": [
@@ -367,7 +367,7 @@
     {
       "atomType": "Molecule",
       "x": 0.3,
-      "y": 0.6,
+      "y": 0.4,
       "uniqueID": "id-385",
       "name": "DoorTracks",
       "ioValues": [
@@ -520,7 +520,7 @@
     {
       "atomType": "Molecule",
       "x": 0.3,
-      "y": 0.7,
+      "y": 0.6,
       "uniqueID": "id-416",
       "name": "SlidingDoors",
       "ioValues": [
@@ -669,6 +669,264 @@
         }
       ],
       "fileTypeVersion": 1
+    },
+    {
+      "atomType": "Molecule",
+      "x": 0.3,
+      "y": 0.7,
+      "uniqueID": "id-447",
+      "name": "LegBrackets",
+      "ioValues": [
+        {
+          "name": "Width",
+          "ioValue": 1600
+        },
+        {
+          "name": "Length",
+          "ioValue": 450
+        },
+        {
+          "name": "LegHeight",
+          "ioValue": 140
+        }
+      ],
+      "topLevel": false,
+      "allAtoms": [
+        {
+          "atomType": "Output",
+          "x": 1,
+          "y": 0.5,
+          "uniqueID": "id-449",
+          "ioValues": [
+            {
+              "name": "number or geometry",
+              "ioValue": "__GEOMETRY_INPUT__"
+            }
+          ]
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-451",
+          "name": "Width",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-454",
+          "name": "Length",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.3,
+          "uniqueID": "id-457",
+          "name": "LegHeight",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Code",
+          "x": 0.5,
+          "y": 0.4,
+          "uniqueID": "id-460",
+          "ioValues": [
+            {
+              "name": "width",
+              "ioValue": 1600
+            },
+            {
+              "name": "length",
+              "ioValue": 450
+            },
+            {
+              "name": "legHeight",
+              "ioValue": 140
+            }
+          ],
+          "interpreterVersion": 1,
+          "code": "function run(width: number = 1600, length: number = 450, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), legH = Number(legHeight);\n  if (![W, L, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  try {\n    const inset = 70, size = 70, blockH = 25, screwR = 2.25, screwOff = 25;\n    const out = [];\n    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {\n      const cx = sx * (W / 2 - inset), cy = sy * (L / 2 - inset);\n      let g = replicad.drawRectangle(size, size).sketchOnPlane(\"XY\").extrude(blockH).translate([cx, cy, legH - blockH]);\n      for (const [hx, hy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {\n        g = g.cut(replicad.makeCylinder(screwR, blockH + 2, [cx + hx * screwOff, cy + hy * screwOff, legH - blockH - 1], [0, 0, 1]));\n      }\n      out.push(new Assembly({ geometry: g, color: \"#E8E4DA\", tags: [\"3dprint\", \"bracket\"], bom: [\"Leg bracket \" + size + \"x\" + size + \"x\" + blockH + \"mm PETG + 4x 4mm wood screws\"] }));\n    }\n    return out;\n  } catch (e) {\n    console.error(\"LegBrackets failed: \" + e);\n    return [];\n  }\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, legHeight = 140) {\n    const W = Number(width), L = Number(length), legH = Number(legHeight);\n    if (![W, L, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    try {\n        const inset = 70, size = 70, blockH = 25, screwR = 2.25, screwOff = 25;\n        const out = [];\n        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {\n            const cx = sx * (W / 2 - inset), cy = sy * (L / 2 - inset);\n            let g = replicad.drawRectangle(size, size).sketchOnPlane(\"XY\").extrude(blockH).translate([cx, cy, legH - blockH]);\n            for (const [hx, hy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {\n                g = g.cut(replicad.makeCylinder(screwR, blockH + 2, [cx + hx * screwOff, cy + hy * screwOff, legH - blockH - 1], [0, 0, 1]));\n            }\n            out.push(new Assembly({ geometry: g, color: \"#E8E4DA\", tags: [\"3dprint\", \"bracket\"], bom: [\"Leg bracket \" + size + \"x\" + size + \"x\" + blockH + \"mm PETG + 4x 4mm wood screws\"] }));\n        }\n        return out;\n    }\n    catch (e) {\n        console.error(\"LegBrackets failed: \" + e);\n        return [];\n    }\n}\n"
+        }
+      ],
+      "allConnectors": [
+        {
+          "ap2Name": "width",
+          "ap1ID": "id-451",
+          "ap2ID": "id-460"
+        },
+        {
+          "ap2Name": "length",
+          "ap1ID": "id-454",
+          "ap2ID": "id-460"
+        },
+        {
+          "ap2Name": "legHeight",
+          "ap1ID": "id-457",
+          "ap2ID": "id-460"
+        },
+        {
+          "ap2Name": "number or geometry",
+          "ap1ID": "id-460",
+          "ap2ID": "id-449"
+        }
+      ],
+      "fileTypeVersion": 1
+    },
+    {
+      "atomType": "Molecule",
+      "x": 0.3,
+      "y": 0.9,
+      "uniqueID": "id-471",
+      "name": "Legs",
+      "ioValues": [
+        {
+          "name": "Width",
+          "ioValue": 1600
+        },
+        {
+          "name": "Length",
+          "ioValue": 450
+        },
+        {
+          "name": "LegHeight",
+          "ioValue": 140
+        }
+      ],
+      "topLevel": false,
+      "allAtoms": [
+        {
+          "atomType": "Output",
+          "x": 1,
+          "y": 0.5,
+          "uniqueID": "id-473",
+          "ioValues": [
+            {
+              "name": "number or geometry",
+              "ioValue": "__GEOMETRY_INPUT__"
+            }
+          ]
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-475",
+          "name": "Width",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-478",
+          "name": "Length",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.3,
+          "uniqueID": "id-481",
+          "name": "LegHeight",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Code",
+          "x": 0.5,
+          "y": 0.4,
+          "uniqueID": "id-484",
+          "ioValues": [
+            {
+              "name": "width",
+              "ioValue": 1600
+            },
+            {
+              "name": "length",
+              "ioValue": 450
+            },
+            {
+              "name": "legHeight",
+              "ioValue": 140
+            }
+          ],
+          "interpreterVersion": 1,
+          "code": "function run(width: number = 1600, length: number = 450, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), legH = Number(legHeight);\n  if (![W, L, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  try {\n    const r = 12, inset = 70, splay = 55, topGap = 3, clearance = 0.3, socketLen = 30, extra = 20;\n    const floorCut = replicad.drawRectangle(W * 2, L * 2).sketchOnPlane(\"XY\").extrude(100).translate([0, 0, -100]);\n    const out = [];\n    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {\n      const top = [sx * (W / 2 - inset), sy * (L / 2 - inset), legH - topGap];\n      const foot = [sx * (W / 2 - inset + splay), sy * (L / 2 - inset + splay), 0];\n      const d = [top[0] - foot[0], top[1] - foot[1], top[2] - foot[2]];\n      const len = Math.hypot(d[0], d[1], d[2]);\n      const u = [d[0] / len, d[1] / len, d[2] / len];\n      // Start below the floor, then trim flat so the foot sits level.\n      const start = [foot[0] - u[0] * extra, foot[1] - u[1] * extra, foot[2] - u[2] * extra];\n      const leg = replicad.makeCylinder(r, len + extra, start, u).cut(floorCut.clone());\n      const sStart = [top[0] - u[0] * socketLen, top[1] - u[1] * socketLen, top[2] - u[2] * socketLen];\n      // Sleeve first so the leg (after it) stays whole and the sleeve becomes a thin clearance shell.\n      out.push(new Assembly({ geometry: replicad.makeCylinder(r + clearance, socketLen + 1, sStart, u), color: \"#FF6B6B\", tags: [\"keepout\"] }));\n      out.push(new Assembly({ geometry: leg, color: \"#1A1A1A\", tags: [\"legs\", \"hardware\"], bom: [\"Steel tube leg \" + 2 * r + \"mm dia x \" + Math.round(len) + \"mm, ends cut to splay angle\"] }));\n    }\n    return out;\n  } catch (e) {\n    console.error(\"Legs failed: \" + e);\n    return [];\n  }\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, legHeight = 140) {\n    const W = Number(width), L = Number(length), legH = Number(legHeight);\n    if (![W, L, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    try {\n        const r = 12, inset = 70, splay = 55, topGap = 3, clearance = 0.3, socketLen = 30, extra = 20;\n        const floorCut = replicad.drawRectangle(W * 2, L * 2).sketchOnPlane(\"XY\").extrude(100).translate([0, 0, -100]);\n        const out = [];\n        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {\n            const top = [sx * (W / 2 - inset), sy * (L / 2 - inset), legH - topGap];\n            const foot = [sx * (W / 2 - inset + splay), sy * (L / 2 - inset + splay), 0];\n            const d = [top[0] - foot[0], top[1] - foot[1], top[2] - foot[2]];\n            const len = Math.hypot(d[0], d[1], d[2]);\n            const u = [d[0] / len, d[1] / len, d[2] / len];\n            // Start below the floor, then trim flat so the foot sits level.\n            const start = [foot[0] - u[0] * extra, foot[1] - u[1] * extra, foot[2] - u[2] * extra];\n            const leg = replicad.makeCylinder(r, len + extra, start, u).cut(floorCut.clone());\n            const sStart = [top[0] - u[0] * socketLen, top[1] - u[1] * socketLen, top[2] - u[2] * socketLen];\n            // Sleeve first so the leg (after it) stays whole and the sleeve becomes a thin clearance shell.\n            out.push(new Assembly({ geometry: replicad.makeCylinder(r + clearance, socketLen + 1, sStart, u), color: \"#FF6B6B\", tags: [\"keepout\"] }));\n            out.push(new Assembly({ geometry: leg, color: \"#1A1A1A\", tags: [\"legs\", \"hardware\"], bom: [\"Steel tube leg \" + 2 * r + \"mm dia x \" + Math.round(len) + \"mm, ends cut to splay angle\"] }));\n        }\n        return out;\n    }\n    catch (e) {\n        console.error(\"Legs failed: \" + e);\n        return [];\n    }\n}\n"
+        }
+      ],
+      "allConnectors": [
+        {
+          "ap2Name": "width",
+          "ap1ID": "id-475",
+          "ap2ID": "id-484"
+        },
+        {
+          "ap2Name": "length",
+          "ap1ID": "id-478",
+          "ap2ID": "id-484"
+        },
+        {
+          "ap2Name": "legHeight",
+          "ap1ID": "id-481",
+          "ap2ID": "id-484"
+        },
+        {
+          "ap2Name": "number or geometry",
+          "ap1ID": "id-484",
+          "ap2ID": "id-473"
+        }
+      ],
+      "fileTypeVersion": 1
+    },
+    {
+      "atomType": "Assembly",
+      "x": 0.7,
+      "y": 0.5,
+      "uniqueID": "id-495",
+      "ioValues": [
+        {
+          "name": "makeDisjoint",
+          "ioValue": true
+        },
+        {
+          "name": "Shape 1",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "Shape2",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "Shape3",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "Shape4",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "Shape5",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "Shape6",
+          "ioValue": "__GEOMETRY_INPUT__"
+        },
+        {
+          "name": "Shape7",
+          "ioValue": "__GEOMETRY_INPUT__"
+        }
+      ]
     }
   ],
   "allConnectors": [
@@ -693,6 +951,16 @@
       "ap2ID": "id-416"
     },
     {
+      "ap2Name": "Width",
+      "ap1ID": "id-259",
+      "ap2ID": "id-447"
+    },
+    {
+      "ap2Name": "Width",
+      "ap1ID": "id-259",
+      "ap2ID": "id-471"
+    },
+    {
       "ap2Name": "Length",
       "ap1ID": "id-261",
       "ap2ID": "id-269"
@@ -711,6 +979,16 @@
       "ap2Name": "Length",
       "ap1ID": "id-261",
       "ap2ID": "id-416"
+    },
+    {
+      "ap2Name": "Length",
+      "ap1ID": "id-261",
+      "ap2ID": "id-447"
+    },
+    {
+      "ap2Name": "Length",
+      "ap1ID": "id-261",
+      "ap2ID": "id-471"
     },
     {
       "ap2Name": "Height",
@@ -771,10 +1049,50 @@
       "ap2Name": "LegHeight",
       "ap1ID": "id-267",
       "ap2ID": "id-416"
+    },
+    {
+      "ap2Name": "LegHeight",
+      "ap1ID": "id-267",
+      "ap2ID": "id-447"
+    },
+    {
+      "ap2Name": "LegHeight",
+      "ap1ID": "id-267",
+      "ap2ID": "id-471"
+    },
+    {
+      "ap2Name": "Shape 1",
+      "ap1ID": "id-269",
+      "ap2ID": "id-495"
+    },
+    {
+      "ap2Name": "Shape2",
+      "ap1ID": "id-317",
+      "ap2ID": "id-495"
+    },
+    {
+      "ap2Name": "Shape3",
+      "ap1ID": "id-385",
+      "ap2ID": "id-495"
+    },
+    {
+      "ap2Name": "Shape4",
+      "ap1ID": "id-416",
+      "ap2ID": "id-495"
+    },
+    {
+      "ap2Name": "Shape5",
+      "ap1ID": "id-447",
+      "ap2ID": "id-495"
+    },
+    {
+      "ap2Name": "Shape6",
+      "ap1ID": "id-471",
+      "ap2ID": "id-495"
     },
     {
       "ap2Name": "number or geometry",
-      "ap1ID": "id-269",
+      "ap1ID": "id-495",
       "ap2ID": "id-257"
     }
   ],
