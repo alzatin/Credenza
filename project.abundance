@@ -28,7 +28,7 @@
     },
     {
       "atomType": "Constant",
-      "x": 0,
+      "x": 0.1,
       "y": 0.4,
       "uniqueID": "id-261",
       "name": "Length",
@@ -36,7 +36,7 @@
     },
     {
       "atomType": "Constant",
-      "x": 0,
+      "x": 0.1,
       "y": 0.5,
       "uniqueID": "id-263",
       "name": "Height",
@@ -173,8 +173,8 @@
             }
           ],
           "interpreterVersion": 1,
-          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  const carcassH = H - legH;\n  const ply = \"#D9B45B\";\n\n  function panel(xs: number, ys: number, zs: number, cx: number, cy: number, bz: number, name: string) {\n    const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n    return new Assembly({\n      geometry: g,\n      color: ply,\n      tags: [\"cnc\", \"carcass\"],\n      bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n    });\n  }\n\n  const openW = W - 2 * T;\n  return [\n    panel(T, L, carcassH, -W / 2 + T / 2, 0, legH, \"Left side\"),\n    panel(T, L, carcassH, W / 2 - T / 2, 0, legH, \"Right side\"),\n    panel(openW, L, T, 0, 0, legH, \"Bottom\"),\n    panel(openW, L, T, 0, 0, H - T, \"Top\"),\n    panel(openW, T, carcassH - 2 * T, 0, L / 2 - T / 2, legH + T, \"Back\"),\n  ];\n}\n",
-          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    const carcassH = H - legH;\n    const ply = \"#D9B45B\";\n    function panel(xs, ys, zs, cx, cy, bz, name) {\n        const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n        return new Assembly({\n            geometry: g,\n            color: ply,\n            tags: [\"cnc\", \"carcass\"],\n            bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n        });\n    }\n    const openW = W - 2 * T;\n    return [\n        panel(T, L, carcassH, -W / 2 + T / 2, 0, legH, \"Left side\"),\n        panel(T, L, carcassH, W / 2 - T / 2, 0, legH, \"Right side\"),\n        panel(openW, L, T, 0, 0, legH, \"Bottom\"),\n        panel(openW, L, T, 0, 0, H - T, \"Top\"),\n        panel(openW, T, carcassH - 2 * T, 0, L / 2 - T / 2, legH + T, \"Back\"),\n    ];\n}\n"
+          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  try {\n    const carcassH = H - legH;\n    const ply = \"#D9B45B\";\n    // Odd finger count so both ends of each joint are side-panel tabs.\n    const n = Math.max(3, 2 * Math.round((L / 75 - 1) / 2) + 1);\n    const ys = [];\n    for (let k = 0; k <= n; k++) ys.push(k === n ? L / 2 : -L / 2 + (k * L) / n);\n\n    function box(xs: number, yl: number, zs: number, cx: number, cy: number, bz: number) {\n      return replicad.drawRectangle(xs, yl).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n    }\n    function wrap(g: any, name: string, dims: string) {\n      return new Assembly({ geometry: g, color: ply, tags: [\"cnc\", \"carcass\"], bom: [name + \" \" + dims + \"mm plywood\"] });\n    }\n    // Side profile in the YZ plane with finger tabs reaching through the top and bottom panels.\n    function side(x0: number) {\n      const pts = [];\n      for (let k = 0; k < n; k++) {\n        const z = k % 2 === 0 ? legH : legH + T;\n        pts.push([ys[k], z], [ys[k + 1], z]);\n      }\n      for (let k = n - 1; k >= 0; k--) {\n        const z = k % 2 === 0 ? H : H - T;\n        pts.push([ys[k + 1], z], [ys[k], z]);\n      }\n      let d = replicad.draw(pts[0]);\n      for (let i = 1; i < pts.length; i++) d = d.lineTo(pts[i]);\n      return d.close().sketchOnPlane(\"YZ\").extrude(T).translate([x0, 0, 0]);\n    }\n\n    const r = Math.round;\n    // Each part is cut by the parts after it: side tabs notch the top/bottom, the back rabbets everything.\n    return [\n      wrap(box(W, L, T, 0, 0, H - T), \"Top\", r(W) + \"x\" + r(L) + \"x\" + T),\n      wrap(box(W, L, T, 0, 0, legH), \"Bottom\", r(W) + \"x\" + r(L) + \"x\" + T),\n      wrap(side(-W / 2), \"Left side\", T + \"x\" + r(L) + \"x\" + r(carcassH)),\n      wrap(side(W / 2 - T), \"Right side\", T + \"x\" + r(L) + \"x\" + r(carcassH)),\n      wrap(box(W - T, T, carcassH - T, 0, L / 2 - T / 2, legH + T / 2), \"Back\", r(W - T) + \"x\" + r(carcassH - T) + \"x\" + T),\n    ];\n  } catch (e) {\n    console.error(\"Carcass failed: \" + e);\n    return [];\n  }\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    try {\n        const carcassH = H - legH;\n        const ply = \"#D9B45B\";\n        // Odd finger count so both ends of each joint are side-panel tabs.\n        const n = Math.max(3, 2 * Math.round((L / 75 - 1) / 2) + 1);\n        const ys = [];\n        for (let k = 0; k <= n; k++)\n            ys.push(k === n ? L / 2 : -L / 2 + (k * L) / n);\n        function box(xs, yl, zs, cx, cy, bz) {\n            return replicad.drawRectangle(xs, yl).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n        }\n        function wrap(g, name, dims) {\n            return new Assembly({ geometry: g, color: ply, tags: [\"cnc\", \"carcass\"], bom: [name + \" \" + dims + \"mm plywood\"] });\n        }\n        // Side profile in the YZ plane with finger tabs reaching through the top and bottom panels.\n        function side(x0) {\n            const pts = [];\n            for (let k = 0; k < n; k++) {\n                const z = k % 2 === 0 ? legH : legH + T;\n                pts.push([ys[k], z], [ys[k + 1], z]);\n            }\n            for (let k = n - 1; k >= 0; k--) {\n                const z = k % 2 === 0 ? H : H - T;\n                pts.push([ys[k + 1], z], [ys[k], z]);\n            }\n            let d = replicad.draw(pts[0]);\n            for (let i = 1; i < pts.length; i++)\n                d = d.lineTo(pts[i]);\n            return d.close().sketchOnPlane(\"YZ\").extrude(T).translate([x0, 0, 0]);\n        }\n        const r = Math.round;\n        // Each part is cut by the parts after it: side tabs notch the top/bottom, the back rabbets everything.\n        return [\n            wrap(box(W, L, T, 0, 0, H - T), \"Top\", r(W) + \"x\" + r(L) + \"x\" + T),\n            wrap(box(W, L, T, 0, 0, legH), \"Bottom\", r(W) + \"x\" + r(L) + \"x\" + T),\n            wrap(side(-W / 2), \"Left side\", T + \"x\" + r(L) + \"x\" + r(carcassH)),\n            wrap(side(W / 2 - T), \"Right side\", T + \"x\" + r(L) + \"x\" + r(carcassH)),\n            wrap(box(W - T, T, carcassH - T, 0, L / 2 - T / 2, legH + T / 2), \"Back\", r(W - T) + \"x\" + r(carcassH - T) + \"x\" + T),\n        ];\n    }\n    catch (e) {\n        console.error(\"Carcass failed: \" + e);\n        return [];\n    }\n}\n"
         }
       ],
       "allConnectors": [
@@ -213,8 +213,8 @@
     },
     {
       "atomType": "Molecule",
-      "x": 0.4,
-      "y": 0.7,
+      "x": 0.5,
+      "y": 0.6,
       "uniqueID": "id-317",
       "name": "Interior",
       "ioValues": [
@@ -309,10 +309,6 @@
               "ioValue": 1600
             },
             {
-              "name": "thickness",
-              "ioValue": 18
-            },
-            {
               "name": "length",
               "ioValue": 450
             },
@@ -321,13 +317,17 @@
               "ioValue": 750
             },
             {
+              "name": "thickness",
+              "ioValue": 18
+            },
+            {
               "name": "legHeight",
               "ioValue": 140
             }
           ],
           "interpreterVersion": 1,
-          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  const carcassH = H - legH;\n  const ply = \"#D9B45B\";\n\n  function panel(xs: number, ys: number, zs: number, cx: number, cy: number, bz: number, name: string) {\n    const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n    return new Assembly({\n      geometry: g,\n      color: ply,\n      tags: [\"cnc\", \"interior\"],\n      bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n    });\n  }\n\n  const innerH = carcassH - 2 * T;\n  const shelfW = W / 2 - 3 * T / 2;\n  const midZ = legH + carcassH / 2;\n  return [\n    panel(T, L - T, innerH, 0, -T / 2, legH + T, \"Divider\"),\n    panel(shelfW, L - T, T, -W / 4 + T / 4, -T / 2, midZ - T / 2, \"Left shelf\"),\n    panel(shelfW, L - T, T, W / 4 - T / 4, -T / 2, midZ - T / 2, \"Right shelf\"),\n  ];\n}\n",
-          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    const carcassH = H - legH;\n    const ply = \"#D9B45B\";\n    function panel(xs, ys, zs, cx, cy, bz, name) {\n        const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n        return new Assembly({\n            geometry: g,\n            color: ply,\n            tags: [\"cnc\", \"interior\"],\n            bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n        });\n    }\n    const innerH = carcassH - 2 * T;\n    const shelfW = W / 2 - 3 * T / 2;\n    const midZ = legH + carcassH / 2;\n    return [\n        panel(T, L - T, innerH, 0, -T / 2, legH + T, \"Divider\"),\n        panel(shelfW, L - T, T, -W / 4 + T / 4, -T / 2, midZ - T / 2, \"Left shelf\"),\n        panel(shelfW, L - T, T, W / 4 - T / 4, -T / 2, midZ - T / 2, \"Right shelf\"),\n    ];\n}\n"
+          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  try {\n    const ply = \"#D9B45B\";\n    const carcassH = H - legH;\n    const setback = 50;               // clear space at the front for the door tracks\n    const yFront = -L / 2 + setback;\n    const yBack = L / 2 - T / 2;      // half-depth dado into the back panel\n    const depth = yBack - yFront;\n    const cy = (yFront + yBack) / 2;\n    const midZ = legH + carcassH / 2;\n    const shelfW = W / 2 - T;         // from half-depth dado in the side to the divider face\n\n    function panel(xs: number, ys: number, zs: number, cx: number, bz: number, name: string) {\n      const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n      return new Assembly({\n        geometry: g,\n        color: ply,\n        tags: [\"cnc\", \"interior\"],\n        bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n      });\n    }\n\n    return [\n      panel(T, depth, carcassH - T, 0, legH + T / 2, \"Divider\"),\n      panel(shelfW, depth, T, -W / 4, midZ - T / 2, \"Left shelf\"),\n      panel(shelfW, depth, T, W / 4, midZ - T / 2, \"Right shelf\"),\n    ];\n  } catch (e) {\n    console.error(\"Interior failed: \" + e);\n    return [];\n  }\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    try {\n        const ply = \"#D9B45B\";\n        const carcassH = H - legH;\n        const setback = 50; // clear space at the front for the door tracks\n        const yFront = -L / 2 + setback;\n        const yBack = L / 2 - T / 2; // half-depth dado into the back panel\n        const depth = yBack - yFront;\n        const cy = (yFront + yBack) / 2;\n        const midZ = legH + carcassH / 2;\n        const shelfW = W / 2 - T; // from half-depth dado in the side to the divider face\n        function panel(xs, ys, zs, cx, bz, name) {\n            const g = replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n            return new Assembly({\n                geometry: g,\n                color: ply,\n                tags: [\"cnc\", \"interior\"],\n                bom: [name + \" \" + Math.round(xs) + \"x\" + Math.round(ys) + \"x\" + Math.round(zs) + \"mm plywood\"],\n            });\n        }\n        return [\n            panel(T, depth, carcassH - T, 0, legH + T / 2, \"Divider\"),\n            panel(shelfW, depth, T, -W / 4, midZ - T / 2, \"Left shelf\"),\n            panel(shelfW, depth, T, W / 4, midZ - T / 2, \"Right shelf\"),\n        ];\n    }\n    catch (e) {\n        console.error(\"Interior failed: \" + e);\n        return [];\n    }\n}\n"
         }
       ],
       "allConnectors": [
@@ -363,6 +363,312 @@
         }
       ],
       "fileTypeVersion": 1
+    },
+    {
+      "atomType": "Molecule",
+      "x": 0.3,
+      "y": 0.6,
+      "uniqueID": "id-385",
+      "name": "DoorTracks",
+      "ioValues": [
+        {
+          "name": "Width",
+          "ioValue": 1600
+        },
+        {
+          "name": "Length",
+          "ioValue": 450
+        },
+        {
+          "name": "Height",
+          "ioValue": 750
+        },
+        {
+          "name": "Thickness",
+          "ioValue": 18
+        },
+        {
+          "name": "LegHeight",
+          "ioValue": 140
+        }
+      ],
+      "topLevel": false,
+      "allAtoms": [
+        {
+          "atomType": "Output",
+          "x": 1,
+          "y": 0.5,
+          "uniqueID": "id-387",
+          "ioValues": [
+            {
+              "name": "number or geometry",
+              "ioValue": "__GEOMETRY_INPUT__"
+            }
+          ]
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-389",
+          "name": "Width",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-392",
+          "name": "Length",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.3,
+          "uniqueID": "id-395",
+          "name": "Height",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.4,
+          "uniqueID": "id-398",
+          "name": "Thickness",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.5,
+          "uniqueID": "id-401",
+          "name": "LegHeight",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Code",
+          "x": 0.5,
+          "y": 0.5,
+          "uniqueID": "id-404",
+          "ioValues": [
+            {
+              "name": "width",
+              "ioValue": 1600
+            },
+            {
+              "name": "thickness",
+              "ioValue": 18
+            },
+            {
+              "name": "length",
+              "ioValue": 450
+            },
+            {
+              "name": "height",
+              "ioValue": 750
+            },
+            {
+              "name": "legHeight",
+              "ioValue": 140
+            }
+          ],
+          "interpreterVersion": 1,
+          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  try {\n    const openingW = W - 2 * T;\n    const railD = 42;                 // wall 6 + groove 12 + wall 6 + groove 12 + wall 6\n    const groove = 12;\n    const botH = 12, botDepth = 6;\n    const topH = 20, topDepth = 14;\n    const maxSeg = 250;               // print bed limit\n    const yRail = -L / 2 + railD / 2;\n    const grooveYs = [-L / 2 + 12, -L / 2 + 30];\n    const zBot = legH + T;\n    const zTop = H - T - topH;\n    const nSeg = Math.ceil(openingW / maxSeg);\n    const segW = openingW / nSeg;\n\n    function box(xs: number, ys: number, zs: number, cx: number, cy: number, bz: number) {\n      return replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n    }\n\n    const parts = [];\n    for (let i = 0; i < nSeg; i++) {\n      const cx = -openingW / 2 + segW * (i + 0.5);\n      const label = Math.round(segW) + \"x\" + railD;\n      parts.push(new Assembly({ geometry: box(segW, railD, botH, cx, yRail, zBot), color: \"#E8E4DA\", tags: [\"3dprint\", \"track\"], bom: [\"Bottom track segment \" + label + \"x\" + botH + \"mm PETG\"] }));\n      parts.push(new Assembly({ geometry: box(segW, railD, topH, cx, yRail, zTop), color: \"#E8E4DA\", tags: [\"3dprint\", \"track\"], bom: [\"Top track segment \" + label + \"x\" + topH + \"mm PETG\"] }));\n    }\n    // Keepout channels come last so they cut the grooves into every segment.\n    for (const gy of grooveYs) {\n      parts.push(new Assembly({ geometry: box(openingW + 2, groove, botDepth + 1, 0, gy, zBot + botH - botDepth), color: \"#FF6B6B\", tags: [\"keepout\"] }));\n      parts.push(new Assembly({ geometry: box(openingW + 2, groove, topDepth + 1, 0, gy, zTop - 1), color: \"#FF6B6B\", tags: [\"keepout\"] }));\n    }\n    return parts;\n  } catch (e) {\n    console.error(\"DoorTracks failed: \" + e);\n    return [];\n  }\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    try {\n        const openingW = W - 2 * T;\n        const railD = 42; // wall 6 + groove 12 + wall 6 + groove 12 + wall 6\n        const groove = 12;\n        const botH = 12, botDepth = 6;\n        const topH = 20, topDepth = 14;\n        const maxSeg = 250; // print bed limit\n        const yRail = -L / 2 + railD / 2;\n        const grooveYs = [-L / 2 + 12, -L / 2 + 30];\n        const zBot = legH + T;\n        const zTop = H - T - topH;\n        const nSeg = Math.ceil(openingW / maxSeg);\n        const segW = openingW / nSeg;\n        function box(xs, ys, zs, cx, cy, bz) {\n            return replicad.drawRectangle(xs, ys).sketchOnPlane(\"XY\").extrude(zs).translate([cx, cy, bz]);\n        }\n        const parts = [];\n        for (let i = 0; i < nSeg; i++) {\n            const cx = -openingW / 2 + segW * (i + 0.5);\n            const label = Math.round(segW) + \"x\" + railD;\n            parts.push(new Assembly({ geometry: box(segW, railD, botH, cx, yRail, zBot), color: \"#E8E4DA\", tags: [\"3dprint\", \"track\"], bom: [\"Bottom track segment \" + label + \"x\" + botH + \"mm PETG\"] }));\n            parts.push(new Assembly({ geometry: box(segW, railD, topH, cx, yRail, zTop), color: \"#E8E4DA\", tags: [\"3dprint\", \"track\"], bom: [\"Top track segment \" + label + \"x\" + topH + \"mm PETG\"] }));\n        }\n        // Keepout channels come last so they cut the grooves into every segment.\n        for (const gy of grooveYs) {\n            parts.push(new Assembly({ geometry: box(openingW + 2, groove, botDepth + 1, 0, gy, zBot + botH - botDepth), color: \"#FF6B6B\", tags: [\"keepout\"] }));\n            parts.push(new Assembly({ geometry: box(openingW + 2, groove, topDepth + 1, 0, gy, zTop - 1), color: \"#FF6B6B\", tags: [\"keepout\"] }));\n        }\n        return parts;\n    }\n    catch (e) {\n        console.error(\"DoorTracks failed: \" + e);\n        return [];\n    }\n}\n"
+        }
+      ],
+      "allConnectors": [
+        {
+          "ap2Name": "width",
+          "ap1ID": "id-389",
+          "ap2ID": "id-404"
+        },
+        {
+          "ap2Name": "length",
+          "ap1ID": "id-392",
+          "ap2ID": "id-404"
+        },
+        {
+          "ap2Name": "height",
+          "ap1ID": "id-395",
+          "ap2ID": "id-404"
+        },
+        {
+          "ap2Name": "thickness",
+          "ap1ID": "id-398",
+          "ap2ID": "id-404"
+        },
+        {
+          "ap2Name": "legHeight",
+          "ap1ID": "id-401",
+          "ap2ID": "id-404"
+        },
+        {
+          "ap2Name": "number or geometry",
+          "ap1ID": "id-404",
+          "ap2ID": "id-387"
+        }
+      ],
+      "fileTypeVersion": 1
+    },
+    {
+      "atomType": "Molecule",
+      "x": 0.3,
+      "y": 0.7,
+      "uniqueID": "id-416",
+      "name": "SlidingDoors",
+      "ioValues": [
+        {
+          "name": "Width",
+          "ioValue": 1600
+        },
+        {
+          "name": "Length",
+          "ioValue": 450
+        },
+        {
+          "name": "Height",
+          "ioValue": 750
+        },
+        {
+          "name": "Thickness",
+          "ioValue": 18
+        },
+        {
+          "name": "LegHeight",
+          "ioValue": 140
+        }
+      ],
+      "topLevel": false,
+      "allAtoms": [
+        {
+          "atomType": "Output",
+          "x": 1,
+          "y": 0.5,
+          "uniqueID": "id-418",
+          "ioValues": [
+            {
+              "name": "number or geometry",
+              "ioValue": "__GEOMETRY_INPUT__"
+            }
+          ]
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-420",
+          "name": "Width",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.2,
+          "uniqueID": "id-423",
+          "name": "Length",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.3,
+          "uniqueID": "id-426",
+          "name": "Height",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.4,
+          "uniqueID": "id-429",
+          "name": "Thickness",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Input",
+          "x": 0,
+          "y": 0.5,
+          "uniqueID": "id-432",
+          "name": "LegHeight",
+          "type": "number",
+          "options": []
+        },
+        {
+          "atomType": "Code",
+          "x": 0.5,
+          "y": 0.5,
+          "uniqueID": "id-435",
+          "ioValues": [
+            {
+              "name": "width",
+              "ioValue": 1600
+            },
+            {
+              "name": "thickness",
+              "ioValue": 18
+            },
+            {
+              "name": "length",
+              "ioValue": 450
+            },
+            {
+              "name": "height",
+              "ioValue": 750
+            },
+            {
+              "name": "legHeight",
+              "ioValue": 140
+            }
+          ],
+          "interpreterVersion": 1,
+          "code": "function run(width: number = 1600, length: number = 450, height: number = 750, thickness: number = 18, legHeight: number = 140) {\n  const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n  if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0)) return [];\n  try {\n    const openingW = W - 2 * T;\n    const td = 10;                    // door thickness, rides in 12 mm grooves\n    const overlap = 40;\n    const doorW = openingW / 2 + overlap / 2;\n    const bz = legH + T + 12 - 6;     // resting on the bottom groove floor\n    const topZ = H - T - 14;          // leaves lift clearance in the deeper top groove\n    const doorH = topZ - bz;\n    const pullR = 18, pullInset = 60;\n\n    function door(x0: number, cy: number, pullX: number, color: string, name: string) {\n      let g = replicad.drawRectangle(doorW, td).sketchOnPlane(\"XY\").extrude(doorH).translate([x0 + doorW / 2, cy, bz]);\n      const pull = replicad.makeCylinder(pullR, td + 4, [pullX, cy - td / 2 - 2, bz + doorH / 2], [0, 1, 0]);\n      g = g.cut(pull);\n      return new Assembly({\n        geometry: g,\n        color: color,\n        tags: [\"cnc\", \"door\"],\n        bom: [name + \" \" + Math.round(doorW) + \"x\" + Math.round(doorH) + \"x\" + td + \"mm plywood\"],\n      });\n    }\n\n    const leftX0 = -openingW / 2;\n    const rightX0 = openingW / 2 - doorW;\n    return [\n      door(leftX0, -L / 2 + 12, leftX0 + pullInset, \"#B23A2E\", \"Left sliding door\"),\n      door(rightX0, -L / 2 + 30, rightX0 + doorW - pullInset, \"#2E5A8C\", \"Right sliding door\"),\n    ];\n  } catch (e) {\n    console.error(\"SlidingDoors failed: \" + e);\n    return [];\n  }\n}\n",
+          "compiledCode": "\"use strict\";\nfunction run(width = 1600, length = 450, height = 750, thickness = 18, legHeight = 140) {\n    const W = Number(width), L = Number(length), H = Number(height), T = Number(thickness), legH = Number(legHeight);\n    if (![W, L, H, T, legH].every((v) => Number.isFinite(v) && v > 0))\n        return [];\n    try {\n        const openingW = W - 2 * T;\n        const td = 10; // door thickness, rides in 12 mm grooves\n        const overlap = 40;\n        const doorW = openingW / 2 + overlap / 2;\n        const bz = legH + T + 12 - 6; // resting on the bottom groove floor\n        const topZ = H - T - 14; // leaves lift clearance in the deeper top groove\n        const doorH = topZ - bz;\n        const pullR = 18, pullInset = 60;\n        function door(x0, cy, pullX, color, name) {\n            let g = replicad.drawRectangle(doorW, td).sketchOnPlane(\"XY\").extrude(doorH).translate([x0 + doorW / 2, cy, bz]);\n            const pull = replicad.makeCylinder(pullR, td + 4, [pullX, cy - td / 2 - 2, bz + doorH / 2], [0, 1, 0]);\n            g = g.cut(pull);\n            return new Assembly({\n                geometry: g,\n                color: color,\n                tags: [\"cnc\", \"door\"],\n                bom: [name + \" \" + Math.round(doorW) + \"x\" + Math.round(doorH) + \"x\" + td + \"mm plywood\"],\n            });\n        }\n        const leftX0 = -openingW / 2;\n        const rightX0 = openingW / 2 - doorW;\n        return [\n            door(leftX0, -L / 2 + 12, leftX0 + pullInset, \"#B23A2E\", \"Left sliding door\"),\n            door(rightX0, -L / 2 + 30, rightX0 + doorW - pullInset, \"#2E5A8C\", \"Right sliding door\"),\n        ];\n    }\n    catch (e) {\n        console.error(\"SlidingDoors failed: \" + e);\n        return [];\n    }\n}\n"
+        }
+      ],
+      "allConnectors": [
+        {
+          "ap2Name": "width",
+          "ap1ID": "id-420",
+          "ap2ID": "id-435"
+        },
+        {
+          "ap2Name": "length",
+          "ap1ID": "id-423",
+          "ap2ID": "id-435"
+        },
+        {
+          "ap2Name": "height",
+          "ap1ID": "id-426",
+          "ap2ID": "id-435"
+        },
+        {
+          "ap2Name": "thickness",
+          "ap1ID": "id-429",
+          "ap2ID": "id-435"
+        },
+        {
+          "ap2Name": "legHeight",
+          "ap1ID": "id-432",
+          "ap2ID": "id-435"
+        },
+        {
+          "ap2Name": "number or geometry",
+          "ap1ID": "id-435",
+          "ap2ID": "id-418"
+        }
+      ],
+      "fileTypeVersion": 1
     }
   ],
   "allConnectors": [
@@ -377,6 +683,16 @@
       "ap2ID": "id-317"
     },
     {
+      "ap2Name": "Width",
+      "ap1ID": "id-259",
+      "ap2ID": "id-385"
+    },
+    {
+      "ap2Name": "Width",
+      "ap1ID": "id-259",
+      "ap2ID": "id-416"
+    },
+    {
       "ap2Name": "Length",
       "ap1ID": "id-261",
       "ap2ID": "id-269"
@@ -385,6 +701,16 @@
       "ap2Name": "Length",
       "ap1ID": "id-261",
       "ap2ID": "id-317"
+    },
+    {
+      "ap2Name": "Length",
+      "ap1ID": "id-261",
+      "ap2ID": "id-385"
+    },
+    {
+      "ap2Name": "Length",
+      "ap1ID": "id-261",
+      "ap2ID": "id-416"
     },
     {
       "ap2Name": "Height",
@@ -397,6 +723,16 @@
       "ap2ID": "id-317"
     },
     {
+      "ap2Name": "Height",
+      "ap1ID": "id-263",
+      "ap2ID": "id-385"
+    },
+    {
+      "ap2Name": "Height",
+      "ap1ID": "id-263",
+      "ap2ID": "id-416"
+    },
+    {
       "ap2Name": "Thickness",
       "ap1ID": "id-265",
       "ap2ID": "id-269"
@@ -407,6 +743,16 @@
       "ap2ID": "id-317"
     },
     {
+      "ap2Name": "Thickness",
+      "ap1ID": "id-265",
+      "ap2ID": "id-385"
+    },
+    {
+      "ap2Name": "Thickness",
+      "ap1ID": "id-265",
+      "ap2ID": "id-416"
+    },
+    {
       "ap2Name": "LegHeight",
       "ap1ID": "id-267",
       "ap2ID": "id-269"
@@ -415,6 +761,16 @@
       "ap2Name": "LegHeight",
       "ap1ID": "id-267",
       "ap2ID": "id-317"
+    },
+    {
+      "ap2Name": "LegHeight",
+      "ap1ID": "id-267",
+      "ap2ID": "id-385"
+    },
+    {
+      "ap2Name": "LegHeight",
+      "ap1ID": "id-267",
+      "ap2ID": "id-416"
     },
     {
       "ap2Name": "number or geometry",
